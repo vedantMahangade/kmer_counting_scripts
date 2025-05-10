@@ -8,10 +8,11 @@ This script automates the process of generating **unique k-mers** for multiple c
 
 ```bash
 chmod +x kmc_kmer_pipeline.sh
-./kmc_kmer_pipeline.sh <fasta_dir> <output_dir>
+./kmc_kmer_pipeline.sh <fasta_dir> <class_file> <output_dir>
 ```
 
 - `<fasta_dir>`: Path to the directory containing class-specific FASTA files.
+- `<class_file>`: Text file containing list of classes.
 - `<output_dir>`: Path where output files and intermediate results will be saved.
 
 > Modify the script directly to set the path to the KMC binary (`kmc_bin`) if not already defined in your environment.
