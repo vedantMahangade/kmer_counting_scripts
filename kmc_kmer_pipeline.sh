@@ -1,28 +1,28 @@
 #!/bin/sh
+
 # Define paths
-# kmc_bin=$1
 fasta_dir=$1
-output_dir=$2
-
+class_file=$2
+output_dir=$3
 # List of classes
-classes=("Bacillus" "Streptomyces" "Pseudomonas" "Lactobacillus" "Staphylococcus" \
-        "Vibrio" "Chloroplast" "Escherichia-Shigella" "Paenibacillus" "Streptococcus")
-# classes=("promoter" "non_promoter")
+#classes=("Bacillus" "Streptomyces" "Pseudomonas" "Lactobacillus" "Staphylococcus" \
+#        "Vibrio" "Chloroplast" "Escherichia-Shigella" "Paenibacillus" "Streptococcus")
+# Load list of classes from a text file
+mapfile -t classes < "$class_file"
 
-
-# Iterate through k-mer sizes 20 to 20
-for kmer_size in $(seq 1 100); do
+# Iterate through k-mer sizes
+for kmer_size in $(seq 5 100); do
     echo "### Processing k-mer size: $kmer_size"
     
     for class in "${classes[@]}"; do
         echo "# Processing class: $class"
-        class_fasta="$fasta_dir/${class}_16s_v3v4.fasta"
+        class_fasta="$fasta_dir/${class}.fasta"
         class_output="$output_dir/${class}_k${kmer_size}"
         class_kmers="$class_output/kmers"
         mkdir -p "$class_output/tmpdir"
 
         # Run KMC k-mer counting for class
-        $kmc_bin/kmc -k${kmer_size} -ci1 -cs9999 -b -m70 -fm "$class_fasta" "$class_kmers" "$class_output/tmpdir/"
+        kmc -k${kmer_size} -ci1 -cs9999 -m70 -sm -r -fm -t36 -sf4 -sp8 -sr24 "$class_fasta" "$class_kmers" "$class_output/tmpdir/"
     done
 
 
@@ -51,13 +51,13 @@ for kmer_size in $(seq 1 100); do
         echo "$op_str" >> "$operations_file"
     
         # Execute KMC tools with complex option
-        $kmc_bin/kmc_tools complex "$operations_file"
+        kmc_tools -t36 complex "$operations_file"
     done
 
     
     # Convert to human-readable format
     for class in "${classes[@]}"; do
-        $kmc_bin/kmc_dump "$output_dir/subtract_${class}_k${kmer_size}" "$output_dir/subtract_${class}_k${kmer_size}.txt"
+        kmc_dump "$output_dir/subtract_${class}_k${kmer_size}" "$output_dir/subtract_${class}_k${kmer_size}.txt"
         merged_output="$output_dir/unique_${class}_kmers.txt"
         cat "$output_dir/subtract_${class}_k${kmer_size}.txt" >> "$merged_output"
     done
