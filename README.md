@@ -22,29 +22,10 @@ chmod +x kmc_kmer_pipeline.sh
 ## Prerequisites
 
 - [KMC3](https://github.com/refresh-bio/KMC) must be installed and compiled.
-- FASTA files for each bacterial class must be named in the format:
+- FASTA files for each class must be named in the format:
   ```
-  <ClassName>_16s_v3v4.fasta
+  <ClassName>.fasta
   ```
-
----
-
-## Bacterial Classes Processed
-
-The script is configured to process the following bacterial groups:
-
-- Bacillus
-- Streptomyces
-- Pseudomonas
-- Lactobacillus
-- Staphylococcus
-- Vibrio
-- Chloroplast
-- Escherichia-Shigella
-- Paenibacillus
-- Streptococcus
-
-> You can customize the `classes` array in the script to use different groups or categories (e.g., promoters vs. non-promoters).
 
 ---
 
@@ -64,20 +45,11 @@ For each `k-mer` size and class:
 
 Temporary directories used by KMC are automatically removed at the end of each `k-mer` size iteration.
 
----
-
-## Example
-
-```bash
-./kmc_kmer_pipeline.sh ./input_fastas ./kmc_output
-```
-
-Generates unique k-mers for each class between k-mer sizes 1 and 100 using the FASTA files in `./input_fastas`.
 
 ---
 
 ## Notes
 
-- Script assumes 16S V3V4 regions as inputs. Adjust FASTA naming and preprocessing if using different gene regions.
+- Script is specifically for kmer counting and extracting class-specific kmers.
 - Heavy disk I/O and memory usage may occur depending on the size of your FASTA files and `k-mer` sizes.
 
