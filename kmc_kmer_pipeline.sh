@@ -1,33 +1,48 @@
 #!/bin/sh
+#SBATCH --time=12:00:00
+#SBATCH -p highMem
+#SBATCH -J kmc_16s
+#SBATCH -o kmc_16s4.out
+#SBATCH -e kmc_16s.err
+
+start=$(date +%s)
 
 # Define paths
-fasta_dir=$1
-class_file=$2
-output_dir=$3
+kmc_bin="/scratch/rahlab/vedant/kmc/bin"
+fasta_dir="/scratch/rahlab/vedant/guided_tokenization/data/all_genera/kmers_fasta"
+output_dir="/scratch/rahlab/vedant/guided_tokenization/data/all_genera/kmers"
+
+
 # List of classes
 #classes=("Bacillus" "Streptomyces" "Pseudomonas" "Lactobacillus" "Staphylococcus" \
 #        "Vibrio" "Chloroplast" "Escherichia-Shigella" "Paenibacillus" "Streptococcus")
 # Load list of classes from a text file
+class_file="/scratch/rahlab/vedant/guided_tokenization/data/all_genera/families.txt"
 mapfile -t classes < "$class_file"
 
 # Iterate through k-mer sizes
 for kmer_size in $(seq 5 100); do
-    echo "### Processing k-mer size: $kmer_size"
+    echo "## Processing k-mer size: $kmer_size"
     
     for class in "${classes[@]}"; do
-        echo "# Processing class: $class"
+
+        # Run KMC k-mer counting for class
+        echo "### Processing k-mer counting for class: $class, for k-mer size: $kmer_size"
         class_fasta="$fasta_dir/${class}.fasta"
         class_output="$output_dir/${class}_k${kmer_size}"
         class_kmers="$class_output/kmers"
         mkdir -p "$class_output/tmpdir"
 
-        # Run KMC k-mer counting for class
-        kmc -k${kmer_size} -ci1 -cs9999 -m70 -sm -r -fm -t36 -sf4 -sp8 -sr24 "$class_fasta" "$class_kmers" "$class_output/tmpdir/"
-    done
 
-
-    for i in "${!classes[@]}"; do
-        current_class="${classes[$i]}"
+        if [ "$kmer_size" -lt 30 ]; then # skip -r for kmer size less than 30
+            $kmc_bin/kmc -k${kmer_size} -ci1 -cs9999 -m70 -sm -fm -t36 -sf4 -sp8 -sr24 "$class_fasta" "$class_kmers" "$class_output/tmpdir/"
+        else
+            $kmc_bin/kmc -k${kmer_size} -ci1 -cs9999 -m70 -sm -r -fm -t36 -sf4 -sp8 -sr24 "$class_fasta" "$class_kmers" "$class_output/tmpdir/"
+        fi
+        
+        # Create Operations file and use KMC tool to get class specific kmers
+        echo "### Getting unique k-mers for class: $class, for k-mer size: $kmer_size"
+        current_class=$class #"${classes[$i]}"
         operations_file="$output_dir/kmc_operations_${current_class}_k${kmer_size}.txt"
     
         echo "INPUT:" > "$operations_file"
@@ -51,21 +66,23 @@ for kmer_size in $(seq 5 100); do
         echo "$op_str" >> "$operations_file"
     
         # Execute KMC tools with complex option
-        kmc_tools -t36 complex "$operations_file"
-    done
+        $kmc_bin/kmc_tools -t36 complex "$operations_file"
 
-    
-    # Convert to human-readable format
-    for class in "${classes[@]}"; do
-        kmc_dump "$output_dir/subtract_${class}_k${kmer_size}" "$output_dir/subtract_${class}_k${kmer_size}.txt"
+        # Convert to human-readable format
+        echo "### Exporting unique k-mers for class: $class, for k-mer size: $kmer_size"
+        $kmc_bin/kmc_dump "$output_dir/subtract_${class}_k${kmer_size}" "$output_dir/subtract_${class}_k${kmer_size}.txt"
         merged_output="$output_dir/unique_${class}_kmers.txt"
         cat "$output_dir/subtract_${class}_k${kmer_size}.txt" >> "$merged_output"
+
+    
+        # Cleanup temporary directories
+        echo "### Cleaning temporary directories for class: $class, for k-mer size: $kmer_size"
+        rm -rf "$output_dir/${class}_k${kmer_size}/tmpdir"
     done
     
-    # Cleanup temporary directories
-    for class in "${classes[@]}"; do
-        rmdir "$output_dir/${class}_k${kmer_size}/tmpdir"
-    done
-    
-    echo "### Done processing k-mer size: $kmer_size"
+    echo "## Done processing k-mer size: $kmer_size"
 done
+
+end=$(date +%s)
+total_runtime=$((end - start))
+echo "Total runtime for k=5 to 100: $total_runtime seconds"
