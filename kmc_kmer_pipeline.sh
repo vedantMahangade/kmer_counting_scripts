@@ -1,16 +1,11 @@
 #!/bin/sh
-#SBATCH --time=12:00:00
-#SBATCH -p highMem
-#SBATCH -J kmc_16s
-#SBATCH -o kmc_16s4.out
-#SBATCH -e kmc_16s.err
 
 start=$(date +%s)
 
 # Define paths
-kmc_bin="/scratch/rahlab/vedant/kmc/bin"
-fasta_dir="/scratch/rahlab/vedant/guided_tokenization/data/all_genera/kmers_fasta"
-output_dir="/scratch/rahlab/vedant/guided_tokenization/data/all_genera/kmers"
+fasta_dir=$1
+class_file=$2
+output_dir=$3
 
 
 # List of classes
