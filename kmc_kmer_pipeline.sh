@@ -1,11 +1,10 @@
 #!/bin/sh
-
 start=$(date +%s)
 
 # Define paths
-fasta_dir=$1
-class_file=$2
-output_dir=$3
+kmc_bin="/scratch/rahlab/vedant/kmc/bin"
+fasta_dir="/scratch/rahlab/vedant/guided_tokenization/data/all_genera/kmers_fasta"
+output_dir="/scratch/rahlab/vedant/guided_tokenization/data/all_genera/kmers"
 
 
 # List of classes
@@ -19,9 +18,10 @@ mapfile -t classes < "$class_file"
 for kmer_size in $(seq 5 100); do
     echo "## Processing k-mer size: $kmer_size"
     
+    # Run KMC k-mer counting for class
     for class in "${classes[@]}"; do
 
-        # Run KMC k-mer counting for class
+        
         echo "### Processing k-mer counting for class: $class, for k-mer size: $kmer_size"
         class_fasta="$fasta_dir/${class}.fasta"
         class_output="$output_dir/${class}_k${kmer_size}"
@@ -34,8 +34,11 @@ for kmer_size in $(seq 5 100); do
         else
             $kmc_bin/kmc -k${kmer_size} -ci1 -cs9999 -m70 -sm -r -fm -t36 -sf4 -sp8 -sr24 "$class_fasta" "$class_kmers" "$class_output/tmpdir/"
         fi
+    done
+
+    # Create Operations file and use KMC tool to get class specific kmers
+    for class in "${classes[@]}"; do
         
-        # Create Operations file and use KMC tool to get class specific kmers
         echo "### Getting unique k-mers for class: $class, for k-mer size: $kmer_size"
         current_class=$class #"${classes[$i]}"
         operations_file="$output_dir/kmc_operations_${current_class}_k${kmer_size}.txt"
@@ -62,15 +65,20 @@ for kmer_size in $(seq 5 100); do
     
         # Execute KMC tools with complex option
         $kmc_bin/kmc_tools -t36 complex "$operations_file"
+    done
 
-        # Convert to human-readable format
+    # Convert to human-readable format
+    for class in "${classes[@]}"; do
+        
         echo "### Exporting unique k-mers for class: $class, for k-mer size: $kmer_size"
         $kmc_bin/kmc_dump "$output_dir/subtract_${class}_k${kmer_size}" "$output_dir/subtract_${class}_k${kmer_size}.txt"
         merged_output="$output_dir/unique_${class}_kmers.txt"
         cat "$output_dir/subtract_${class}_k${kmer_size}.txt" >> "$merged_output"
+    done
 
-    
-        # Cleanup temporary directories
+    # Cleanup temporary directories    
+    for class in "${classes[@]}"; do
+
         echo "### Cleaning temporary directories for class: $class, for k-mer size: $kmer_size"
         rm -rf "$output_dir/${class}_k${kmer_size}/tmpdir"
     done
